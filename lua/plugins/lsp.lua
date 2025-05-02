@@ -1,93 +1,65 @@
 return {
-	{
-		"neovim/nvim-lspconfig",
-		dependencies = { "saghen/blink.cmp", { "j-hui/fidget.nvim", opts = {} } },
+  "neovim/nvim-lspconfig",
+  dependencies = {
+    "saghen/blink.cmp",
+    { "williamboman/mason.nvim", config = true },
+    "williamboman/mason-lspconfig.nvim",
+    "WhoIsSethDaniel/mason-tool-installer.nvim",
+    { "j-hui/fidget.nvim",       opts = {} },
+    {
+      "folke/lazydev.nvim",
+      ft = "lua", -- only load on lua files
+      opts = {
+        library = {
+          -- See the configuration section for more details
+          -- Load luvit types when the `vim.uv` word is found
+          { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+        },
+      },
+    },
+  },
 
-		-- example using `opts` for defining servers
-		opts = {
-			servers = {
-				lua_ls = {},
-				gopls = {},
-                rust_analyzer = {},
-			},
-		},
-		config = function(_, opts)
-			local lspconfig = require("lspconfig")
-			for server, config in pairs(opts.servers) do
-				-- passing config.capabilities to blink.cmp merges with the capabilities in your
-				-- `opts[server].capabilities, if you've defined it
-				config.capabilities = require("blink.cmp").get_lsp_capabilities(config.capabilities)
-				lspconfig[server].setup(config)
-			end
-		end,
+  opts = {
+    servers = {
+      lua_ls = {},
+    },
+  },
 
-		-- -- example calling setup directly for each LSP
-		--  config = function()
-		--    local capabilities = require('blink.cmp').get_lsp_capabilities()
-		--    local lspconfig = require('lspconfig')
-		--
-		--    lspconfig['lua_ls'].setup({ capabilities = capabilities })
-		--  end
-	},
-	{
-		"saghen/blink.cmp",
-		dependencies = {
-			"rafamadriz/friendly-snippets",
+  config = function(_, opts)
+    require("mason").setup()
+    require("mason-lspconfig").setup({
+      handlers = {
+        function(server_name)
+          require("lspconfig")[server_name].setup({})
+        end,
+      },
+    })
 
-			{ "williamboman/mason.nvim", config = true },
-			"williamboman/mason-lspconfig.nvim",
-			"WhoIsSethDaniel/mason-tool-installer.nvim",
-		},
-		version = "*",
-		build = "cargo build --release",
-		---@module 'blink.cmp'
-		---@type blink.cmp.Config
-		opts = {
-			-- 'default' (recommended) for mappings similar to built-in completions (C-y to accept)
-			-- 'super-tab' for mappings similar to vscode (tab to accept)
-			-- 'enter' for enter to accept
-			-- 'none' for no mappings
-			--
-			-- All presets have the following mappings:
-			-- C-space: Open menu or open docs if already open
-			-- C-n/C-p or Up/Down: Select next/previous item
-			-- C-e: Hide menu
-			-- C-k: Toggle signature help (if signature.enabled = true)
-			--
-			-- See :h blink-cmp-config-keymap for defining your own keymap
-			keymap = { preset = "default" },
-
-			appearance = {
-				nerd_font_variant = "mono",
-			},
-
-			signature = { enabled = true },
-			completion = {
-				accept = {
-					-- experimental auto-brackets support
-					auto_brackets = {
-						enabled = true,
-					},
-				},
-				menu = {
-					draw = {
-						treesitter = { "lsp" },
-					},
-				},
-				documentation = {
-					auto_show = false,
-					auto_show_delay_ms = 200,
-				},
-				ghost_text = {
-					enabled = false,
-				},
-			},
-
-			sources = {
-				default = { "lsp", "path", "snippets", "buffer" },
-			},
-			fuzzy = { implementation = "prefer_rust_with_warning" },
-		},
-		opts_extend = { "sources.default" },
-	},
+      vim.diagnostic.config {
+        severity_sort = true,
+        float = { border = 'rounded', source = 'if_many' },
+        underline = { severity = vim.diagnostic.severity.ERROR },
+        signs =  {
+          text = {
+            [vim.diagnostic.severity.ERROR] = '󰅚 ',
+            [vim.diagnostic.severity.WARN] = '󰀪 ',
+            [vim.diagnostic.severity.INFO] = '󰋽 ',
+            [vim.diagnostic.severity.HINT] = '󰌶 ',
+          },
+        },
+        virtual_text = {
+          source = 'if_many',
+          spacing = 2,
+          format = function(diagnostic)
+            local diagnostic_message = {
+              [vim.diagnostic.severity.ERROR] = diagnostic.message,
+              [vim.diagnostic.severity.WARN] = diagnostic.message,
+              [vim.diagnostic.severity.INFO] = diagnostic.message,
+              [vim.diagnostic.severity.HINT] = diagnostic.message,
+            }
+            return diagnostic_message[diagnostic.severity]
+          end,
+        },
+      }
+  end,
 }

@@ -12,3 +12,4 @@ set.inccommand = "split"
 set.showmode = false
 set.breakindent = false
 set.signcolumn = "yes"
+set.cursorline = true
